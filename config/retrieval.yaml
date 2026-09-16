@@ -1,0 +1,33 @@
+chunking:
+  window_events: 20
+  window_seconds: 120
+  external_chunk_tokens: 512
+  external_overlap_tokens: 64
+
+retrieval:
+  bm25_k: 150                    # candidate depth per query variant before reranking
+  dense_k: 150
+  rrf_k: 60
+  rerank_keep_evidence: 10
+  rerank_keep_external: 5
+  timeline_neighbours: 5
+  dedup_per_shape: 3             # max near-identical event lines (numbers masked) kept before reranking; 0 = off
+  sparse: true                   # BM25 prefetch; false = dense only (baseline)
+  rerank: true                   # cross-encoder reranking; false = RRF order only (baseline)
+  hops: 1                        # multi-hop: after the first context, the model may request follow-up lookups (0 = off)
+  hop_followups: 3               # max follow-up lookups per round, phrased with identifiers seen in the context
+  hop_keep: 5                    # evidence hits merged per follow-up (reranked against the follow-up text)
+
+router:
+  default: auto                    # auto | evidence_only | evidence+attack | attack_only
+  allow_external: true
+  timeline_queries: true           # counting / listing questions also run an exact SQL query over the timeline
+  timeline_query_rows: 60          # max result rows placed in the context
+
+generation:
+  max_context_tokens: 24000
+  require_citations: true
+
+audit:
+  enabled: true                    # one JSON line per question in data/audit/<case>.jsonl (question, route, SQL, records shown, answer hash)
+  store_answer: true               # keep the answer text in the log as well (false = hash only)

@@ -1,0 +1,7 @@
+# Hardening options (Phase 8). Environment: DFA_API_AUTH, DFA_ENCRYPT_NEW_CASES, DFA_MASTER_KEY.
+security:
+  api_auth: auto            # auto | required | off  (auto = tokens required as soon as a user exists or the client is not localhost)
+  encrypt_new_cases: false  # per-case AES-256-GCM key: DuckDB timeline, vector payload text, audit log
+  master_key_file: data/keys/master.key   # wraps the case keys; DFA_MASTER_KEY (passphrase) takes precedence. Back it up.
+  vol_offline: false        # Volatility 3: never fetch symbols online (air-gapped host)
+  vol_symbols: null         # extra symbol directory for Volatility 3

@@ -1,0 +1,39 @@
+# Python / tooling
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Secrets and local settings
+.env
+data/keys/
+data/auth/
+
+# Local runtime state (cases, indexes, timelines, audit trail)
+data/cases/*
+!data/cases/.gitkeep
+data/external/attack/*
+!data/external/attack/.gitkeep
+data/qdrant/
+data/qdrant-server/
+data/timeline/*
+!data/timeline/.gitkeep
+data/audit/*
+!data/audit/.gitkeep
+*.duckdb
+snapshots/
+.qdrant-initialized
+.tools/
+
+# Evaluation outputs
+eval/questions.jsonl
+eval/out-*.json
+
+# LaTeX build files (keep the rendered figures)
+docs/figures/*.aux
+docs/figures/*.log
+docs/figures/*.synctex.gz

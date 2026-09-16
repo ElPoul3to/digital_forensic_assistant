@@ -1,0 +1,4 @@
+labels:
+  evidence_only: "The question can be answered from the case evidence alone (who, when, which host, which IP, what happened)."
+  evidence+attack: "The question asks to map observed behaviour to adversary techniques, tactics, or MITRE ATT&CK."
+  attack_only: "The question is purely about ATT&CK knowledge and does not reference the case evidence."

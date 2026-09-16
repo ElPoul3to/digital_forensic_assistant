@@ -1,0 +1,29 @@
+generator:
+  backend: ollama                 # ollama | openai_compatible
+  model: hf.co/JonathanColetti/Qwen3.8-27B-Uncensored-GGUF:Q8_0
+  base_url: http://localhost:11434
+  num_ctx: 32768
+  temperature: 0.1
+  keep_alive: 30m
+  think: false                    # Qwen3 thinking mode (true = slower, hidden reasoning)
+
+embedding:
+  # 0.6B leaves room for the 27B Q8 generator (~28 GB) on a 48 GB card.
+  # Switch to Qwen/Qwen3-Embedding-8B (~16 GB fp16) if the generator is unloaded during ingestion.
+  model: Qwen/Qwen3-Embedding-0.6B
+  device: cuda
+  batch_size: 32
+  max_length: 1024
+  dtype: float16
+
+reranker:
+  model: Qwen/Qwen3-Reranker-0.6B
+  device: cuda
+  batch_size: 16
+  max_length: 2048
+  dtype: float16
+
+vector_store:
+  backend: qdrant
+  path: data/qdrant                # embedded mode (no server needed)
+  url: null                        # set to http://localhost:6333 to use a server instead
