@@ -5,7 +5,10 @@ from dfa.router.router import Route, decide, extract_filters
 def test_router_heuristics():
     assert decide("Which ATT&CK techniques match the sudo activity on app-1?", use_llm=False).route == Route.EVIDENCE_ATTACK
     assert decide("Map the sudo activity to MITRE", use_llm=False).route == Route.EVIDENCE_ATTACK
-    assert decide("What is T1078.002?", use_llm=False).route == Route.ATTACK_ONLY
+    # attack_only is never chosen from keywords: without the LLM an ATT&CK mention searches both tiers
+    assert decide("What is T1078.002?", use_llm=False).route == Route.EVIDENCE_ATTACK
+    q = "One of the downloaded files on the target system is a scanning tool. What is the name of the tool? What is the ATT&CK technique related ?"
+    assert decide(q, use_llm=False).route == Route.EVIDENCE_ATTACK
     d = decide("Who logged in from 190.166.87.164 on host app-1 after 2010-04-20?", use_llm=False)
     assert d.route == Route.EVIDENCE_ONLY
     assert d.filters.ip == "190.166.87.164" and d.filters.host == "app-1"
@@ -19,7 +22,7 @@ def test_router_aggregate_flag():
     assert decide("Which external IP addresses successfully logged in as root via SSH?", use_llm=False).aggregate
     assert decide("How many failed SSH logins were there?", use_llm=False).aggregate
     assert not decide("When was the account dhg created and by which process?", use_llm=False).aggregate
-    assert not decide("What is T1078.002?", use_llm=False).aggregate  # attack_only never queries the timeline
+    assert not decide("What is T1078.002?", use_llm=False).aggregate
 
 
 def test_filter_extraction():

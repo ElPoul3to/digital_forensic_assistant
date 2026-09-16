@@ -123,10 +123,12 @@ def extract_filters(q: str) -> Filters:
 
 
 def heuristic_route(q: str) -> tuple[Route, str] | None:
+    """Keyword shortcut. Only the safe case is decided here: an ATT&CK word next to an evidence word means
+    both tiers are searched. An ATT&CK word without evidence words is ambiguous ("what is T1078?" versus
+    "one of the downloaded files is a scanner, which technique?") and is left to the LLM router; never
+    pick attack_only from keywords, because that route skips the case evidence entirely."""
     a, e = bool(_ATTACK_WORDS.search(q)), bool(_EVIDENCE_WORDS.search(q))
-    if a and not e:
-        return Route.ATTACK_ONLY, "keywords: attack, no evidence terms"
-    if a:
+    if a and e:
         return Route.EVIDENCE_ATTACK, "keywords: attack"
     return None
 
@@ -168,7 +170,10 @@ def decide(q: str, route: str | None = None, use_llm: bool = True) -> Decision:
         r = Route(route)
         reason = "explicit"
     else:
-        picked = heuristic_route(q) or (llm_route(q) if use_llm else None) or (Route.EVIDENCE_ONLY, "default")
+        picked = heuristic_route(q) or (llm_route(q) if use_llm else None)
+        if picked is None:
+            # no LLM (or it failed): an ATT&CK mention still gets both tiers, never attack_only
+            picked = (Route.EVIDENCE_ATTACK, "default: attack keyword") if _ATTACK_WORDS.search(q) else (Route.EVIDENCE_ONLY, "default")
         r, reason = picked
     if not cfg.allow_external and r != Route.EVIDENCE_ONLY:
         r, reason = Route.EVIDENCE_ONLY, reason + " (external disabled)"
