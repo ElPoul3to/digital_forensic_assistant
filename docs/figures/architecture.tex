@@ -1,0 +1,11 @@
+% Architecture of the Digital Forensic Assistant.
+% Standalone: pdflatex architecture.tex  ->  architecture.pdf (vector, for beamer)
+% In beamer: \input{architecture-body.tex} inside a frame (see below), or \includegraphics{architecture.pdf}
+\documentclass[tikz,border=6pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usetikzlibrary{positioning,fit,arrows.meta,calc,backgrounds,shapes.geometric}
+\begin{document}
+\input{architecture-body.tex}
+\end{document}

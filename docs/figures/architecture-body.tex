@@ -1,0 +1,94 @@
+% Body of the architecture figure (tikzpicture only) so it can be \input into a beamer frame.
+\providecommand{\sm}{\scriptsize}
+\definecolor{cEvid}{HTML}{2E6F95}   % evidence / private
+\definecolor{cAtt}{HTML}{B5533C}    % external knowledge
+\definecolor{cQry}{HTML}{3F7D4E}    % query pipeline
+\definecolor{cStore}{HTML}{6B5B95}  % storage
+\definecolor{cGrey}{HTML}{555555}
+\tikzset{
+  font=\sffamily\small,
+  box/.style={draw=#1, fill=#1!8, rounded corners=3pt, line width=0.8pt, align=center,
+              minimum height=8mm, inner sep=5pt, text width=38mm},
+  wide/.style={box=#1, text width=56mm},
+  store/.style={cylinder, shape border rotate=90, aspect=0.25, draw=cStore, fill=cStore!10,
+                line width=0.8pt, align=center, minimum height=11mm, inner sep=3pt, text width=28mm},
+  actor/.style={draw=cGrey, fill=white, rounded corners=6pt, line width=0.8pt, align=center,
+                minimum height=9mm, inner sep=5pt, text width=38mm},
+  lane/.style={draw=#1!60, dashed, rounded corners=6pt, line width=0.6pt, inner sep=9pt, fill=#1!3},
+  lanelabel/.style={font=\sffamily\bfseries\footnotesize, text=#1, anchor=south west, inner sep=2pt},
+  arr/.style={-{Latex[length=2.2mm]}, line width=0.8pt, draw=cGrey},
+  arrq/.style={arr, draw=cQry},
+  lbl/.style={font=\sffamily\scriptsize, text=cGrey, fill=white, inner sep=1.5pt},
+  note/.style={font=\sffamily\scriptsize, text=cGrey, align=center},
+}
+\begin{tikzpicture}[node distance=5mm and 8mm]
+
+%% ---------- Internal knowledge: evidence -> ingestion -> stores ----------
+\node[actor] (evid) {Evidence};
+\node[box=cEvid, below=of evid] (triage) {Triage filter};
+\node[box=cEvid, below=of triage] (detect) {Format detection};
+\node[box=cEvid, below=of detect] (parsers) {Parsers};
+\node[box=cEvid, below=of parsers] (schema) {Normalised event};
+
+\node[store, right=12mm of schema, yshift=10mm] (tl) {Timeline\\[-1pt]{\sm DuckDB}};
+\node[store, below=5mm of tl] (vs) {Vector store\\[-1pt]{\sm Qdrant}};
+
+\draw[arr] (evid) -- (triage);
+\draw[arr] (triage) -- (detect);
+\draw[arr] (detect) -- (parsers);
+\draw[arr] (parsers) -- (schema);
+\draw[arr] (schema.east) -- ++(4mm,0) |- (tl.west);
+\draw[arr] (schema.east) -- ++(4mm,0) |- (vs.west) node[lbl, pos=0.8, below] {embed};
+
+\begin{scope}[on background layer]
+  \node[lane=cEvid, fit=(evid)(triage)(detect)(parsers)(schema)(tl)(vs)] (laneI) {};
+  \node[lanelabel=cEvid] at (laneI.north west) {Internal knowledge (private, per case)};
+\end{scope}
+
+%% ---------- Query pipeline (to the right of the internal lane) ----------
+\node[actor, anchor=north west] (analyst) at ($(laneI.north east)+(16mm,-30mm)$) {Analyst\\[-1pt]{\sm CLI / chat / REST API}};
+\node[box=cQry, right=of analyst] (router) {Router};
+\node[box=cQry, below=8mm of router] (rewrite) {Query rewriting\\[-1pt]{\sm multi-query + HyDE}};
+\node[box=cQry, below=of rewrite] (hybrid) {Hybrid retrieval\\[-1pt]{\sm BM25 + dense, RRF}};
+\node[box=cQry, below=of hybrid] (rerank) {Reranker\\[-1pt]{\sm cross-encoder}};
+\node[box=cQry] (sql) at (analyst.west |- rerank) [anchor=west] {Timeline query\\[-1pt]{\sm read-only SQL $\rightarrow$ [S1]}};
+\node[wide=cQry, below=of rerank] (gen) {LLM generator\\[-1pt]{\sm every claim cited and validated}};
+\node[actor, below=of gen, text width=56mm] (answer) {Answer};
+
+\draw[arrq] (analyst) -- (router);
+\draw[arrq] (router) -- (rewrite) node[lbl, midway, right] {always};
+\draw[arrq] ($(router.south west)+(4mm,0)$) -- ++(0,-4mm) -| (sql.north);
+\node[lbl] at ($(sql.north)+(0,14mm)$) {count / list question};
+\draw[arrq] (rewrite) -- (hybrid);
+\draw[arrq] (hybrid) -- (rerank);
+\draw[arrq] (rerank) -- (gen);
+\draw[arrq] (sql.south) |- ($(gen.west)+(0,3mm)$);
+\draw[arrq] (gen) -- (answer);
+
+% stores -> retrieval
+\coordinate (bus) at ($(vs.east)+(6mm,0)$);
+\draw[arr, draw=cStore] (vs.east) -- (bus) |- (hybrid.west);
+\node[lbl, above=0.5mm of bus, xshift=-3mm] {\texttt{case\_<id>}};
+\coordinate (tbus) at ($(tl.east)+(9mm,0)$);
+\draw[arr, draw=cStore] (tl.east) -- (tbus) |- (sql.west);
+\draw[arr, draw=cStore] (tl.east) -- (tbus) |- ($(gen.west)+(0,-3mm)$) node[lbl, pos=0.93, below] {neighbours};
+\node[lbl, above=0.5mm of tbus, xshift=-4mm] {SQL};
+
+\begin{scope}[on background layer]
+  \node[lane=cQry, fit=(analyst)(router)(rewrite)(hybrid)(rerank)(sql)(gen)(answer)] (laneQ) {};
+  \node[lanelabel=cQry] at (laneQ.north west) {Query pipeline (FastAPI)};
+\end{scope}
+
+%% ---------- External knowledge (above the query lane) ----------
+\node[actor, anchor=south west] (attack) at ($(laneQ.north west)+(0,12mm)$) {MITRE ATT\&CK};
+\node[box=cAtt, right=of attack] (attchunk) {Technique chunks};
+\node[store, right=of attchunk] (vsatt) {Vector store\\[-1pt]{\sm Qdrant, \texttt{attack}}};
+\draw[arr] (attack) -- (attchunk);
+\draw[arr] (attchunk) -- (vsatt);
+\draw[arr, draw=cAtt] (vsatt.south) |- (hybrid.east) node[lbl, pos=0.78, above] {needs TTP};
+\begin{scope}[on background layer]
+  \node[lane=cAtt, fit=(attack)(attchunk)(vsatt)] (laneE) {};
+  \node[lanelabel=cAtt] at (laneE.north west) {External knowledge (public)};
+\end{scope}
+
+\end{tikzpicture}
